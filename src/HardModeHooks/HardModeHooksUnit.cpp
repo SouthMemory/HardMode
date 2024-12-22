@@ -308,26 +308,82 @@ void HardModeHooksUnitScript::OnUnitDeath(Unit* unit, Unit* killer)
         return;
     }
 
+    // 检查玩家是否有硬核限制
     if (!sHardModeHandler->PlayerHasRestriction(player->GetGUID(), HARDMODE_RESTRICT_PERMADEATH))
     {
         return;
     }
 
+    auto playerSettings = sHardModeHandler->GetPlayerSetting(player->GetGUID());
+    uint8 OriginalLivesRemaining = playerSettings->LivesRemaining;
+
+    // 减少玩家生命值
+    if (playerSettings && playerSettings->LivesRemaining >= 1)
+    {
+        playerSettings->LivesRemaining--;
+
+        // sHardModeHandler->UpdatePlayerSettings(player->GetGUID(), playerSettings);
+    }
+
+    // 如果玩家被 ShadowBan，则不再发送公告
     if (sHardModeHandler->IsPlayerShadowBanned(player->GetGUID()))
     {
         return;
     }
 
+    // 构建公告内容
     std::stringstream ss;
 
     if (killer)
     {
-        ss << Acore::StringFormatFmt("|cffFF0000Player {} has died to {} {} while undertaking the permadeath restriction!", player->GetName(), killer->ToPlayer() ? "player" : "creature", killer->GetName());
+        ss << Acore::StringFormat("|cffFF0000玩家 {} 死于 {} {} 之手。",
+                                player->GetName(),
+                                killer->ToPlayer() ? "玩家" : "生物",
+                                killer->GetName());
     }
     else
     {
-        ss << Acore::StringFormatFmt("|cffFF0000Player {} has died while undertaking the permadeath restriction!", player->GetName());
+        ss << Acore::StringFormat("|cffFF0000玩家 {} 死亡。", player->GetName());
     }
 
+    // 添加剩余生命值的信息
+    if (playerSettings)
+    {
+        ss << Acore::StringFormat("剩余生命值：{}。|r", playerSettings->LivesRemaining);
+
+        // 如果生命值耗尽，添加永久死亡的说明
+        if (playerSettings->LivesRemaining <= 0)
+        {
+            ss << "\n|cffFF0000此次死亡是永恒的，请铭记他的努力。|r";
+        }
+    }
+
+    // 发送服务器公告
     sWorld->SendServerMessage(SERVER_MSG_STRING, ss.str());
+
+    if (sHardModeHandler->IsModeEnabledForPlayer(player->GetGUID(), 4)){
+        constexpr uint32 TITLE_START = 179;
+        constexpr uint32 TITLE_LENGTH= 108;
+        constexpr uint32 TITLE_SAVED_DB = 36;
+
+        CharTitlesEntry const* titleEntry = sCharTitlesStore.LookupEntry(TITLE_START + playerSettings->LivesRemaining + 1 - 1);
+        if (titleEntry) {
+            ss.str("");
+            ss << Acore::StringFormat("|cffFFFF00梁山好汉 {} 已重归天界！|r", titleEntry->nameMale[4]);
+            // send system message
+            player->SendSystemMessage(ss.str());
+        }
+
+        // 删除所有头衔
+        for (uint32 i = TITLE_START; i < TITLE_START + TITLE_LENGTH; ++i)
+        {
+            // 安全检查头衔是否存在
+            if (CharTitlesEntry const* titleEntry = sCharTitlesStore.LookupEntry(i))
+            {
+                player->SetTitle(titleEntry, true); // 删除头衔
+            }
+        }
+
+        sHardModeHandler->RewardItemsOnDeath(player, 60000, (108 - playerSettings->LivesRemaining)*2);
+    }
 }

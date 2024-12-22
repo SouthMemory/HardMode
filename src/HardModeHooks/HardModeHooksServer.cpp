@@ -332,8 +332,20 @@ void HardModeHooksServerScript::HandleInspectOverride(Player* player, WorldPacke
         return;
     }
 
-    std::string sFormat = Acore::StringFormatFmt("{} has modes {}.", targetPlayer->GetPlayerName(), sHardModeHandler->GetNamesFromEnabledModes(targetPlayer));
+    auto playerSettings = sHardModeHandler->GetPlayerSetting(targetGuid);
+    if (!playerSettings)
+    {
+        return;
+    }
+
+    std::string sFormat = Acore::StringFormat("{}已激活{} 当前剩余生命{}", 
+        targetPlayer->GetPlayerName(), 
+        sHardModeHandler->GetNamesFromEnabledModes(targetPlayer),
+        playerSettings->LivesRemaining);
     sHardModeHandler->SendAlert(player, sFormat);
+
+    // std::string sFormat = Acore::StringFormat("{} has modes {}.", targetPlayer->GetPlayerName(), sHardModeHandler->GetNamesFromEnabledModes(targetPlayer));
+    // sHardModeHandler->SendAlert(player, sFormat);
 }
 
 bool HardModeHooksServerScript::HasModifiedTail(WorldPacket& packet)

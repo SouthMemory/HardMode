@@ -15,7 +15,7 @@
 #        Type:        bool
 #
 
-HardMode.Enable = 0
+HardMode.Enable = 1
 
 #
 #    HardMode.Inspect.Alert

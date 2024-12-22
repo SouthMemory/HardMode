@@ -64,7 +64,7 @@ void HardModePlayerScript::OnLevelChanged(Player* player, uint8 /*oldLevel*/)
 
             if (hasItemRewards)
             {
-                sHardModeHandler->SendAlert(player, "Congratulations for reaching max level, your rewards are in your mailbox.");
+                sHardModeHandler->SendAlert(player, "恭喜你提升到了的新的等级，请通过邮箱查收你的奖励.");
             }
         }
     }

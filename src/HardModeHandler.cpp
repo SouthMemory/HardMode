@@ -33,6 +33,7 @@ void HardModeHandler::LoadHardModes()
             std::string description = fields[2].Get<std::string>();
             uint64 restrictions = fields[3].Get<uint64>();
             bool enabled = fields[4].Get<bool>();
+            uint8 maxlives = fields[5].Get<uint8>();
 
             HardModeInfo mode;
             mode.Id = id;
@@ -40,6 +41,7 @@ void HardModeHandler::LoadHardModes()
             mode.Description = description;
             mode.Restrictions = restrictions;
             mode.Enabled = enabled;
+            mode.MaxLives = maxlives;
 
             _hardModes.emplace(id, mode);
 
@@ -97,6 +99,7 @@ void HardModeHandler::LoadPlayerSettings()
             std::string modes = fields[1].Get<std::string>();
             bool tainted = fields[2].Get<bool>();
             bool shadowban = fields[3].Get<bool>();
+            uint8 livesRemaining = fields[4].Get<uint8>();
 
             std::vector<std::string_view> tokens = Acore::Tokenize(modes, ' ', false);
             HardModePlayerSettings playerSettings;
@@ -125,6 +128,7 @@ void HardModeHandler::LoadPlayerSettings()
             playerSettings.Modes = playerModes;
             playerSettings.Tainted = tainted;
             playerSettings.ShadowBanned = shadowban;
+            playerSettings.LivesRemaining = livesRemaining;
 
             sHardModeHandler->GetPlayerSettings()->emplace(guid, playerSettings);
 
@@ -151,6 +155,7 @@ void HardModeHandler::LoadPlayerSettings(ObjectGuid player)
         std::string modes = fields[1].Get<std::string>();
         bool tainted = fields[2].Get<bool>();
         bool shadowban = fields[3].Get<bool>();
+        uint8 livesRemaining = fields[4].Get<uint8>();
 
         std::vector<std::string_view> tokens = Acore::Tokenize(modes, ' ', false);
         HardModePlayerSettings playerSettings;
@@ -179,6 +184,7 @@ void HardModeHandler::LoadPlayerSettings(ObjectGuid player)
         playerSettings.Modes = playerModes;
         playerSettings.Tainted = tainted;
         playerSettings.ShadowBanned = shadowban;
+        playerSettings.LivesRemaining = livesRemaining;
 
         sHardModeHandler->UpdatePlayerSettings(player, &playerSettings);
     }
@@ -226,9 +232,9 @@ void HardModeHandler::SavePlayerSetting(uint64 guid, HardModePlayerSettings* set
 
     std::string sModes = ss.str();
 
-    CharacterDatabase.Execute("INSERT INTO hardmode_player_settings (guid, modes, tainted, shadowban) VALUES ({}, '{}', {}, {}) ON DUPLICATE KEY UPDATE modes = '{}', tainted = {}, shadowban = {}",
-        guid, sModes, settings->Tainted, settings->ShadowBanned,
-        sModes, settings->Tainted, settings->ShadowBanned);
+    CharacterDatabase.Execute("INSERT INTO hardmode_player_settings (guid, modes, tainted, shadowban, livesRemaining) VALUES ({}, '{}', {}, {}, {}) ON DUPLICATE KEY UPDATE modes = '{}', tainted = {}, shadowban = {}, livesRemaining = {}",
+        guid, sModes, settings->Tainted, settings->ShadowBanned, settings->LivesRemaining, 
+        sModes, settings->Tainted, settings->ShadowBanned, settings->LivesRemaining);
 }
 
 void HardModeHandler::UpdatePlayerSettings(ObjectGuid guid, HardModePlayerSettings* settings)
@@ -261,11 +267,22 @@ HardModePlayerSettings* HardModeHandler::GetPlayerSetting(ObjectGuid guid)
     auto it = playerSettings->find(guid.GetRawValue());
     if (it == playerSettings->end())
     {
+        LOG_ERROR("esp.HardMode", "No settings found for player, using default null settings instead");
+
         HardModePlayerSettings _settings;
         std::vector<uint8> _modes;
         _settings.Modes = _modes;
         _settings.Tainted = false;
         _settings.ShadowBanned = false;
+        _settings.LivesRemaining = 0;
+
+        // log values of _settings
+        LOG_ERROR("esp.HardMode", "Default Settings: Modes: '{}', Tainted: '{}', ShadowBanned: '{}', LivesRemaining: '{}'", _settings.Modes.size(), _settings.Tainted, _settings.ShadowBanned, _settings.LivesRemaining);
+        // log values of _modes
+        for (auto mode : _modes)
+        {
+            LOG_ERROR("esp.HardMode", "Mode: '{}'", mode);
+        }
 
         it = playerSettings->emplace(guid.GetRawValue(), _settings).first;
     }
@@ -606,8 +623,34 @@ void HardModeHandler::RewardItems(Player* player, std::vector<HardModeReward> re
     }
 
     std::string hardModeName = sHardModeHandler->GetNameFromMode(mode);
-    std::string header = Acore::StringFormatFmt("{} Rewards", hardModeName);
-    std::string body = Acore::StringFormatFmt("Congratulations on reaching level {} on {} mode, enjoy your rewards!", player->GetLevel(), hardModeName);
+    std::string header = Acore::StringFormat("{}奖励", hardModeName);
+    std::string body = Acore::StringFormat("恭喜你在{}下提升到了{}级, 请收下你的奖励!", hardModeName, player->GetLevel());
+
+    if (mode == 3) {
+        body += "\n\n模式规则：\n- 你将仅有一次生命，死亡即永恒\n- 可以使用地下城查找器，但无法在野外组队\n\n模式奖励：\n- 每提升一级，奖获得当前等级X5的觉醒者徽记\n- 到80级，你将获得额外的头衔和坐骑\n\n";
+    } else if (mode == 4){
+        body += "\n\n模式规则：\n- 你将有108次梁山好汉附身的机会，耗尽后将无法复活\n- 你将只能通过完成任务、击杀精英怪物和红龙来获取经验\n- 可以使用地下城查找器，但无法在野外组队\n\n模式奖励：\n- 每提升一级，将获得当前等级X3的觉醒者徽记\n- 每死亡一次，将获得当前累计死亡次数X2的觉醒者徽记\n- 到80级，你将获得额外的头衔和坐骑\n\n";
+    }
+
+    SendMailItems(player, mailItems, header, body);
+}
+
+void HardModeHandler::RewardItemsOnDeath(Player* player, uint32 itemId, uint32 itemCount)
+{
+    std::vector<std::pair<uint32, uint32>> mailItems;
+    uint8 mode = 4;
+
+    mailItems.push_back(std::make_pair(itemId, itemCount));
+
+    std::string hardModeName = sHardModeHandler->GetNameFromMode(mode);
+    std::string header = Acore::StringFormat("{}补给", hardModeName);
+    std::string body = Acore::StringFormat("很遗憾你在{}下再次遭遇了死亡, 请收下这些补给, 鼓起勇气继续战斗!", hardModeName);
+
+    if (mode == 3) {
+        body += "\n\n模式规则：\n- 你将仅有一次生命，死亡即永恒\n- 可以使用地下城查找器，但无法在野外组队\n\n模式奖励：\n- 每提升一级，奖获得当前等级X5的觉醒者徽记\n- 到80级，你将获得额外的头衔和坐骑\n\n";
+    } else if (mode == 4){
+        body += "\n\n模式规则：\n- 你将有108次梁山好汉附身的机会，耗尽后将无法复活\n- 你将只能通过完成任务、击杀精英怪物和红龙来获取经验\n- 可以使用地下城查找器，但无法在野外组队\n\n模式奖励：\n- 每提升一级，将获得当前等级X3的觉醒者徽记\n- 每死亡一次，将获得当前累计死亡次数X2的觉醒者徽记\n- 到80级，你将获得额外的头衔和坐骑\n\n";
+    }
 
     SendMailItems(player, mailItems, header, body);
 }
@@ -746,31 +789,51 @@ void HardModeHandler::UpdateModeForPlayer(ObjectGuid guid, uint8 mode, bool stat
         return;
     }
 
-    auto modes = &sHardModeHandler->GetPlayerSetting(guid)->Modes;
+    // 获取玩家设置
+    auto playerSettings = sHardModeHandler->GetPlayerSetting(guid);
+    auto modes = &playerSettings->Modes;
 
+    // 查找模式是否已启用
     auto it = std::find(modes->begin(), modes->end(), mode);
 
-    if (state)
+    if (state) // 启用模式
     {
-        if (it == modes->end())
+        if (it == modes->end()) // 模式未启用，添加模式
         {
             modes->push_back(mode);
         }
     }
-    else
+    else // 禁用模式
     {
-        if (it != modes->end())
+        if (it != modes->end()) // 模式已启用，移除模式
         {
             modes->erase(it);
         }
     }
 
+    // 更新 LivesRemaining 为现有模式的 MaxLives 最小值
+    uint8 minLives = playerSettings->LivesRemaining == 0 ? UINT8_MAX : playerSettings->LivesRemaining; // 初始化为最大值
+    for (uint8 activeMode : *modes)
+    {
+        const HardModeInfo* modeInfo = sHardModeHandler->GetHardModeFromId(activeMode);
+        if (modeInfo) // 确保模式信息存在
+        {
+            minLives = std::min(minLives, modeInfo->MaxLives);
+        }
+    }
+
+    // 如果没有任何模式启用，设置 LivesRemaining 为 0
+    playerSettings->LivesRemaining = modes->empty() ? 0 : minLives;
+
+    // 如果玩家在线，校验并更新玩家的状态
     auto player = ObjectAccessor::FindPlayer(guid);
 
     if (player)
     {
+        // 校验玩家的 Auras
         sHardModeHandler->ValidatePlayerAuras(player);
 
+        // 根据限制更新玩家缩放速度
         if (sHardModeHandler->PlayerHasRestriction(player->GetGUID(), HARDMODE_RESTRICT_SMALLFISH))
         {
             sHardModeHandler->UpdatePlayerScaleSpeed(player, SMALLFISH_SCALE);
@@ -780,6 +843,9 @@ void HardModeHandler::UpdateModeForPlayer(ObjectGuid guid, uint8 mode, bool stat
             sHardModeHandler->UpdatePlayerScaleSpeed(player, 1);
         }
     }
+
+    // 保存玩家设置
+    sHardModeHandler->SavePlayerSetting(guid.GetRawValue(), playerSettings);
 }
 
 bool HardModeHandler::PlayerHasRestriction(ObjectGuid guid, uint32 restriction)
@@ -1002,9 +1068,13 @@ void HardModeHandler::TryShadowBanPlayer(ObjectGuid guid)
 
     if (player)
     {
-        WorldLocation worldLoc(HARDMODE_AREA_AZSHARACRATER, -614.38, -239.69, 379.35, 0.69); // Azshara Crater / Shadow Tomb
-        player->TeleportTo(worldLoc);
-        player->SetHomebind(worldLoc, HARDMODE_AREA_SHADOWTOMB);
+        // 不再将玩家传送到阴影禁令地点
+        // WorldLocation worldLoc(HARDMODE_AREA_AZSHARACRATER, -614.38, -239.69, 379.35, 0.69); // Azshara Crater / Shadow Tomb
+        // player->TeleportTo(worldLoc);
+        // player->SetHomebind(worldLoc, HARDMODE_AREA_SHADOWTOMB);
+
+        CharTitlesEntry const* titleEntry = sCharTitlesStore.LookupEntry(222);
+        player->SetCurrentTitle(titleEntry);
 
         if (!player->IsAlive())
         {

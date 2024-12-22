@@ -8,7 +8,9 @@
 enum HardModeConstants
 {
     HARDMODE_MAIL_SENDER = 441102,
-    HARDMODE_AURA_SHADOWBAN = 45681,
+    // 死亡后为幽灵状态
+    HARDMODE_AURA_SHADOWBAN = 9036,
+    // HARDMODE_AURA_SHADOWBAN = 45681,
     HARDMODE_AREA_AZSHARACRATER = 37,
     HARDMODE_AREA_SHADOWTOMB = 3888,
     HARDMODE_AREA_UNKNOWN = 4988,
@@ -26,6 +28,7 @@ struct HardModeInfo
     std::string Description;
     uint64 Restrictions;
     bool Enabled;
+    uint8 MaxLives;
 };
 
 struct HardModePlayerSettings
@@ -33,6 +36,7 @@ struct HardModePlayerSettings
     std::vector<uint8> Modes;
     bool Tainted;
     bool ShadowBanned;
+    uint8 LivesRemaining;
 };
 
 enum HardModeRestrictions

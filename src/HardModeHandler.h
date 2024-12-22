@@ -54,6 +54,7 @@ public:
     std::vector<HardModeReward>* GetRewardsForMode(uint8 mode);
     void TryRewardPlayer(Player* player, std::vector<HardModeReward> rewards);
     void RewardItems(Player* player, std::vector<HardModeReward> rewards);
+    void RewardItemsOnDeath(Player* player, uint32 itemId, uint32 itemCount);
     void RewardTitle(Player* player, uint32 titleId);
     void RewardSpell(Player* player, uint32 spellId);
     void SendMailItems(Player* player, std::vector<std::pair<uint32, uint32>>& mailItems, std::string header, std::string body);
