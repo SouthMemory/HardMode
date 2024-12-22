@@ -294,6 +294,11 @@ void HardModeHooksPlayerScript::OnPlayerReleasedGhost(Player* player)
         return;
     }
 
+    if (!sHardModeHandler->AnyHardModeEnabledForPlayer(player))
+    {
+        return;
+    }
+
     auto playerSettings = sHardModeHandler->GetPlayerSetting(player->GetGUID());
     LOG_ERROR("esp.HardMode", "Player has {} lives Remaining [OnPlayerReleasedGhost]", playerSettings->LivesRemaining);
 

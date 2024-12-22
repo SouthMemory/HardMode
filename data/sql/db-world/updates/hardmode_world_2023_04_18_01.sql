@@ -1,3 +1,6 @@
+-- delete first
+DROP TABLE IF EXISTS `hardmode_modes`;
+
 CREATE TABLE IF NOT EXISTS `hardmode_modes` (
   `id` tinyint unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,

@@ -267,7 +267,7 @@ HardModePlayerSettings* HardModeHandler::GetPlayerSetting(ObjectGuid guid)
     auto it = playerSettings->find(guid.GetRawValue());
     if (it == playerSettings->end())
     {
-        LOG_ERROR("esp.HardMode", "No settings found for player, using default null settings instead");
+        // LOG_ERROR("esp.HardMode", "No settings found for player, using default null settings instead");
 
         HardModePlayerSettings _settings;
         std::vector<uint8> _modes;
@@ -277,12 +277,12 @@ HardModePlayerSettings* HardModeHandler::GetPlayerSetting(ObjectGuid guid)
         _settings.LivesRemaining = 0;
 
         // log values of _settings
-        LOG_ERROR("esp.HardMode", "Default Settings: Modes: '{}', Tainted: '{}', ShadowBanned: '{}', LivesRemaining: '{}'", _settings.Modes.size(), _settings.Tainted, _settings.ShadowBanned, _settings.LivesRemaining);
+        // LOG_ERROR("esp.HardMode", "Default Settings: Modes: '{}', Tainted: '{}', ShadowBanned: '{}', LivesRemaining: '{}'", _settings.Modes.size(), _settings.Tainted, _settings.ShadowBanned, _settings.LivesRemaining);
         // log values of _modes
-        for (auto mode : _modes)
-        {
-            LOG_ERROR("esp.HardMode", "Mode: '{}'", mode);
-        }
+        // for (auto mode : _modes)
+        // {
+        //     LOG_ERROR("esp.HardMode", "Mode: '{}'", mode);
+        // }
 
         it = playerSettings->emplace(guid.GetRawValue(), _settings).first;
     }
