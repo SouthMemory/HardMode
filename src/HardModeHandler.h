@@ -62,6 +62,8 @@ public:
     void SendAlert(Player* player, std::string message);
 
     bool IsModeEnabledForPlayer(ObjectGuid guid, uint8 mode);
+    bool AnyHardModeEnabledForPlayer(Player* player);
+
     void UpdateModeForPlayer(ObjectGuid guid, uint8 mode, bool state);
     bool PlayerHasRestriction(ObjectGuid guid, uint32 restriction);
     std::vector<HardModeInfo> GetPlayerModesFromRestriction(ObjectGuid guid, uint32 restriction);

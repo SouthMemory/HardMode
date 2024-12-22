@@ -782,6 +782,22 @@ bool HardModeHandler::IsModeEnabledForPlayer(ObjectGuid guid, uint8 mode)
     return false;
 }
 
+bool HardModeHandler::AnyHardModeEnabledForPlayer(Player* player)
+{
+    if (!player)
+    {
+        return false;
+    }
+
+    auto playerModes = sHardModeHandler->GetPlayerSetting(player->GetGUID())->Modes;
+    if (playerModes.size() < 1)
+    {
+        return false;
+    }
+
+    return true;
+}
+
 void HardModeHandler::UpdateModeForPlayer(ObjectGuid guid, uint8 mode, bool state)
 {
     if (!guid)

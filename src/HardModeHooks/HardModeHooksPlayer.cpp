@@ -6,6 +6,7 @@
 #include "Player.h"
 #include "Creature.h"
 #include "Log.h"
+#include "TaskScheduler.h"
 
 void HardModeHooksPlayerScript::OnGiveXP(Player* player, uint32& amount, Unit* victim, uint8 xpSource)
 {
@@ -18,6 +19,16 @@ void HardModeHooksPlayerScript::OnGiveXP(Player* player, uint32& amount, Unit* v
     {
         return;
     }
+
+    // LOG_ERROR("esp.XP", "Player {} received {} XP from {} [OnGiveXP]", player->GetName(), amount, xpSource);
+    // LOG_ERROR("esp.XP", "AnyHardModeEnabledForPlayer {}", sHardModeHandler->AnyHardModeEnabledForPlayer(player));
+
+    if (!sHardModeHandler->AnyHardModeEnabledForPlayer(player))
+    {
+        return;
+    }
+
+    // if sHardModeHandler->IsHard
 
     if (xpSource == PlayerXPSource::XPSOURCE_KILL){
         // mode 4, 击杀对象为普通怪且非Monster时，无法获取经验
@@ -53,13 +64,13 @@ void HardModeHooksPlayerScript::OnGiveXP(Player* player, uint32& amount, Unit* v
 
 
     // 当玩家在队伍中，但不在副本中，将玩家移除出队伍
-    if (player->GetGroup() && !player->GetMap()->IsDungeon())
+    if (player->GetGroup() && !player->GetMap()->Instanceable() && xpSource == PlayerXPSource::XPSOURCE_KILL)
     {
         // 解散队伍
         player->GetGroup()->Disband();
         
         // 通知玩家
-        player->SendSystemMessage("挑战模式下无法在野外组队，队伍已解散");
+        player->SendSystemMessage("挑战模式下无法在野外组队活动，队伍已解散");
     }
 }
 

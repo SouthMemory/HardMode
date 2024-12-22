@@ -349,7 +349,7 @@ void HardModeHooksUnitScript::OnUnitDeath(Unit* unit, Unit* killer)
     // 添加剩余生命值的信息
     if (playerSettings)
     {
-        ss << Acore::StringFormat("剩余生命值：{}。|r", playerSettings->LivesRemaining);
+        ss << Acore::StringFormat("剩余生命：{}。|r", playerSettings->LivesRemaining);
 
         // 如果生命值耗尽，添加永久死亡的说明
         if (playerSettings->LivesRemaining <= 0)
