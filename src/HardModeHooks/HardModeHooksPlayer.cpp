@@ -50,6 +50,17 @@ void HardModeHooksPlayerScript::OnGiveXP(Player* player, uint32& amount, Unit* v
         sHardModeHandler->UpdatePlayerTainted(player->GetGUID(), true);
     }
     LOG_ERROR("esp.XP", "Player {} received {} XP from {} [OnGiveXP]", player->GetName(), amount, xpSource);
+
+
+    // 当玩家在队伍中，但不在副本中，将玩家移除出队伍
+    if (player->GetGroup() && !player->GetMap()->IsDungeon())
+    {
+        // 解散队伍
+        player->GetGroup()->Disband();
+        
+        // 通知玩家
+        player->SendSystemMessage("挑战模式下无法在野外组队，队伍已解散");
+    }
 }
 
 void HardModeHooksPlayerScript::OnQuestComputeXP(Player* player, Quest const* /*quest*/, uint32& xpValue)

@@ -10,5 +10,5 @@ CREATE TABLE IF NOT EXISTS `hardmode_modes` (
 
 DELETE FROM `hardmode_modes` WHERE `id` IN (3, 4);
 
-REPLACE INTO `acore_world`.`hardmode_modes` (`id`, `name`, `description`, `restrictions`, `enabled`, `maxlives`) VALUES (3, '|cffff0000一命模式|r', '死亡即永恒', 8448, 1, 1);
-REPLACE INTO `acore_world`.`hardmode_modes` (`id`, `name`, `description`, `restrictions`, `enabled`, `maxlives`) VALUES (4, '|cffff0000水浒模式|r', '梁山好汉再次下凡', 8448, 1, 108);
+REPLACE INTO `acore_world`.`hardmode_modes` (`id`, `name`, `description`, `restrictions`, `enabled`, `maxlives`) VALUES (3, '|cffff0000一命模式|r', '死亡即永恒', 256, 1, 1);
+REPLACE INTO `acore_world`.`hardmode_modes` (`id`, `name`, `description`, `restrictions`, `enabled`, `maxlives`) VALUES (4, '|cffff0000水浒模式|r', '梁山好汉再次下凡', 256, 1, 108);
