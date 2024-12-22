@@ -225,6 +225,11 @@ void HardModeHooksPlayerScript::OnPlayerResurrect(Player* player, float /*restor
         return;
     }
 
+    if (!sHardModeHandler->AnyHardModeEnabledForPlayer(player))
+    {
+        return;
+    }
+
     auto playerSettings = sHardModeHandler->GetPlayerSetting(player->GetGUID());
 
     LOG_ERROR("esp.HardMode", "Player has {} lives Remaining [OnPlayerResurrect]", playerSettings->LivesRemaining);
